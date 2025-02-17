@@ -104,7 +104,8 @@ This fution starts with the start symbol and iteratively replaces non-terminals 
     def generate_n_strings(self, n=5):
         return [self.generate_string() for _ in range(n)]
 ```
-This function generates a number of strings.
+This function generates a number of strings based on the input parameter. It runs a for loop and therefore for each itteration it generates valid string based on the production rules.
+
 ---
 
 ### **Converting Grammar to Finite Automaton**
