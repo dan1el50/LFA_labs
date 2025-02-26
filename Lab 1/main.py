@@ -78,12 +78,11 @@ nfa.display()
 print("\n" + "="*40)
 
 dfa = nfa.convert_nfa_to_dfa()
-print("\nConverted DFA to Regular Grammar:")
-print("VN (Non-terminals):", {tuple(q) for q in dfa.Q})
+print("\nConverted DFA")
+print("VN (Non-terminals):", {', '.join(['{' + ', '.join(q) + '}' for q in dfa.Q])})
 print("VT (Terminals):", dfa.sigma)
 print("Productions (P):")
 for (state, symbol), next_states in dfa.delta.items():
-    formatted_right = [str(tuple(r)) for r in next_states]
-    print(f"  {tuple(state)} -> {symbol}{', '.join(formatted_right)}")
-print("Start Symbol (S):", tuple(dfa.q0))
-print("Final States:", {tuple(f) for f in dfa.F})
+    print(f"  (({', '.join(state)}), '{symbol}') -> {next_states}")
+print("Start Symbol (S):", ', '.join(dfa.q0))
+print("Final States:", {f'({', '.join(f)})' for f in dfa.F})
