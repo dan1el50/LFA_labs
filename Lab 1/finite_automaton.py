@@ -2,7 +2,7 @@ class FiniteAutomaton:
     def __init__(self, states, alphabet, transitions, start_state, final_states):
         self.Q = states
         self.sigma = alphabet
-        self.delta = {}  # Dictionary to hold transitions as lists (NDFA support)
+        self.delta = {}  # Dictionary to hold transitions as lists
         self.q0 = start_state
         self.F = final_states
 
@@ -10,26 +10,26 @@ class FiniteAutomaton:
         for (state, symbol), next_states in transitions.items():
             if (state, symbol) not in self.delta:
                 self.delta[(state, symbol)] = []
-            self.delta[(state, symbol)].extend(next_states)  # Store multiple next states
+            self.delta[(state, symbol)].extend(next_states)
 
     def to_regular_grammar(self):
         from grammar import Grammar
-        vn = self.Q  # Non-terminals are the states
-        vt = self.sigma  # Terminals are the FA alphabet
-        p = {}  # Production rules
+        vn = self.Q
+        vt = self.sigma
+        p = {}
 
         # Convert transitions to production rules
         for (state, symbol), next_states in self.delta.items():
             if state not in p:
                 p[state] = []
-            for next_state in next_states:  # Handle NDFA case (multiple next states)
+            for next_state in next_states:
                 p[state].append(symbol + next_state)
 
         # Add epsilon transitions for final states
         for final_state in self.F:
             if final_state not in p:
                 p[final_state] = []
-            p[final_state].append("")  # Represents ε
+            p[final_state].append("")
 
         return Grammar(vn, vt, p, self.q0)
 
@@ -37,16 +37,16 @@ class FiniteAutomaton:
         for (state, symbol), next_states in self.delta.items():
             if len(next_states) > 1:  # More than one transition for (state, symbol)
                 return False
-            if symbol == "":  # Check for ε-transitions
+            if symbol == "":
                 return False
         return True
 
     def convert_nfa_to_dfa(self):
-        dfa_states = []  # List of new DFA states (sets of NFA states)
-        dfa_transitions = {}  # DFA transition table
-        dfa_start_state = frozenset([self.q0])  # Initial state of DFA as a frozen set
+        dfa_states = []
+        dfa_transitions = {}
+        dfa_start_state = frozenset([self.q0])
         dfa_states.append(dfa_start_state)
-        unprocessed_states = [dfa_start_state]  # Queue for processing states
+        unprocessed_states = [dfa_start_state]
         dfa_final_states = set()
 
         while unprocessed_states:
