@@ -1,3 +1,7 @@
+import random
+from finite_automaton import FiniteAutomaton
+
+
 class Grammar:
     def __init__(self, vn, vt, p, s):
         self.vn = vn
@@ -5,32 +9,30 @@ class Grammar:
         self.p = p
         self.s = s
 
-    def classify_chomsky_hierarchy(self):
-        is_regular = True
-        is_context_free = True
-        is_context_sensitive = True
+    def generate_string(self):
+        current_string = self.s
+        while True:
+            found_non_terminal = False
+            for symbol in current_string:
+                if symbol in self.vn:
+                    replacement = random.choice(self.p.get(symbol, [symbol]))
+                    current_string = current_string.replace(symbol, replacement, 1)
+                    found_non_terminal = True
+                    break
+            if not found_non_terminal:
+                break
+        return current_string
 
-        for left, right in self.p.items():
-            for production in right:
-                # Check Type 3 (Regular Grammar)
-                if not (len(left) == 1 and left in self.vn and
-                        (len(production) == 1 and production[0] in self.vt or
-                         len(production) == 2 and production[0] in self.vt and production[1] in self.vn)):
-                    is_regular = False
+    def generate_n_strings(self, n=5):
+        return [self.generate_string() for _ in range(n)]
 
-                # Check Type 2 (Context-Free Grammar)
-                if len(left) > 1:
-                    is_context_free = False
-
-                # Check Type 1 (Context-Sensitive Grammar)
-                if len(left) > len(production):
-                    is_context_sensitive = False
-
-        if is_regular:
-            return "Type 3: Regular Grammar"
-        elif is_context_free:
-            return "Type 2: Context-Free Grammar"
-        elif is_context_sensitive:
-            return "Type 1: Context-Sensitive Grammar"
-        else:
-            return "Type 0: Unrestricted Grammar"
+    def to_finite_automaton(self):
+        transitions = {}
+        for left_side, replacements in self.p.items():
+            for replacement in replacements:
+                if len(replacement) > 1:
+                    next_state = replacement[1]
+                else:
+                    next_state = None
+                transitions[(left_side, replacement[0])] = next_state
+        return FiniteAutomaton(set(self.vn), self.vt, transitions, self.s, {None})
