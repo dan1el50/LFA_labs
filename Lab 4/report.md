@@ -53,131 +53,104 @@ once or as many times as we want and in the end we either add `g` or not.
 Write a good report covering all performed actions and faced difficulties.
 # Implementation description
 ## *1.Regex*
-### *Regex 1*
+### *Expand token*
 ```
-def regex1():
-    a_b = random.choice(['a', 'b'])
-    c_d = random.choice(['c', 'd'])
-    e_count = random.randint(1, 5)
-    g = random.choice([True, False])
-    result = f"{a_b}{c_d}{'E' * e_count}{'G' if g else ''}"
-    print(f"Step 1: Process (a|b). Choosing '{a_b}'. Current string: {a_b}")
-    print(f"Step 2: Process (c|d). Choosing '{c_d}'. Current string: {a_b}{c_d}")
-    print(f"Step 3: Process E+. Generating {e_count} times 'E'. Current string: {a_b}{c_d}{'E' * e_count}")
-    if g:
-        print(f"Step 4: Process G?. Including 'G'. Current string: {result}")
+def expand_token_once(token, modifier):
+    if modifier == '*':
+        return token * random.randint(0, MAX_REPEAT)
+    elif modifier == '+':
+        return token * random.randint(1, MAX_REPEAT)
+    elif modifier == '?':
+        return token if random.choice([True, False]) else ''
+    elif modifier.startswith('^'):
+        count = int(modifier[1:])
+        return token * count
     else:
-        print(f"Step 4: Process G?. Skipping 'G'. Current string: {a_b}{c_d}{'E' * e_count}")
+        return token
+```
+
+This function, `expand_token_once`, takes a single character (or group) and a modifier, then returns a randomly expanded
+version of that token based on the modifier rules. For example, `*` repeats it 0 to 3 times, `+` repeats it 1 to 3 times, `?`
+includes it with 50% chance, and `^n` repeats it exactly `n` times. If there's no modifier, it just returns the token as-is.
+
+### *Group parser*
+```
+def (expr):
+    i = 0
+    result = ''
+    while i < len(expr):
+        if expr[i] == '(':
+            # parse group
+            start = i + 1
+            count = 1
+            while i + 1 < len(expr) and count > 0:
+                i += 1
+                if expr[i] == '(': count += 1
+                elif expr[i] == ')': count -= 1
+            group_content = expr[start:i]
+            options = group_content.split('|')
+            chosen = random.choice(options)
+
+            # check for modifier
+            modifier = ''
+            if i + 1 < len(expr) and expr[i + 1] in '*+?':
+                modifier = expr[i + 1]
+                i += 1
+            elif i + 1 < len(expr) and expr[i + 1] == '^':
+                j = i + 2
+                while j < len(expr) and expr[j].isdigit():
+                    j += 1
+                modifier = expr[i + 1:j]
+                i = j - 1
+
+            result += expand_token_once(chosen, modifier)
+
+        elif expr[i].isdigit() or expr[i].isalpha():
+            char = expr[i]
+            modifier = ''
+            if i + 1 < len(expr) and expr[i + 1] in '*+?':
+                modifier = expr[i + 1]
+                i += 1
+            elif i + 1 < len(expr) and expr[i + 1] == '^':
+                j = i + 2
+                while j < len(expr) and expr[j].isdigit():
+                    j += 1
+                modifier = expr[i + 1:j]
+                i = j - 1
+
+            result += expand_token_once(char, modifier)
+
+        i += 1
     return result
 ```
 
-The function `regex1()` generates a random string that matches the regular expression `(a|b)(c|d)E⁺G?`, while also printing
-step-by-step how the string is formed. It begins by selecting a random letter, either `'a'` or `'b'`, from the first group `(
-a|b)`, and immediately prints the current state of the string. Then, it selects a random letter, either `'c'` or `'d'`, from
-the second group `(c|d)`, appends it to the result, and updates the console output accordingly. Next, it generates between
-one and five repetitions of the letter `'E'` to satisfy the `E+` requirement and prints the updated string. Finally, it
-randomly decides whether to include the optional `'G'`, as dictated by `G?`, either appending it and indicating its
-inclusion in the console or skipping it and printing that it was omitted. The function returns the fully generated
-string.
-
-### *Regex 2*
-```
-def regex2():
-    p = 'P'
-    q_r_s = random.choice(['Q', 'R', 'S'])
-    t = 'T'
-    uv_w_x = ''.join(random.choice(['UV', 'W', 'X']))
-    z = random.randint(1, 5)
-    random_zero_to_five = random.randint(0, 5)
-    result = f"{p}{q_r_s}{t}{uv_w_x * random_zero_to_five}{'Z' * z}"
-    print(f"Step 1: Process 'P'. Fixed character. Current string: {p}")
-    print(f"Step 2: Process (Q|R|S). Choosing '{q_r_s}'. Current string: {p}{q_r_s}")
-    print(f"Step 3: Process 'T'. Fixed character. Current string: {p}{q_r_s}{t}")
-    if uv_w_x:
-        print(f"Step 4: Process (UV|W|X)*. Generated '{uv_w_x}' {random_zero_to_five} times. Current string: {p}{q_r_s}{t}{uv_w_x * random_zero_to_five}")
-    else:
-        print(f"Step 4: Process (UV|W|X)*. Skipped (empty). Current string: {p}{q_r_s}{t}")
-    print(f"Step 5: Process Z+. Generating {z} times 'Z'. Current string: {result}")
-    return result
-```
-
-The function `regex2()` generates a random string that matches the regular expression `P(Q|R|S)T(UV|W|X)*Z+`, while also
-printing step-by-step how the string is constructed. It begins by appending the fixed letter `'P'` to the result and
-printing the initial state. Next, it selects a random letter from `Q`, `R`, or `S` for the `(Q|R|S)` group, updates the result,
-and prints the current string. The fixed character `'T'` is then added, with an updated console output. Following this,
-the function selects either `'UV'`, `'W'`, or `'X'` and decides how many times (between 0 and 5) it should be repeated, as
-dictated by the `(UV|W|X)*` pattern. If this section is generated, the console prints the chosen sequence and how many
-times it appears; otherwise, it prints that the section was skipped. Lastly, it generates a sequence of `'Z'` characters,
-ensuring at least one repetition but allowing up to five, as required by `Z+`, and appends it to the result. The final
-constructed string is printed and returned.
-
-### *Regex 3*
-```
-def regex3():
-    one = '1'
-    zero_or_one = ''.join(random.choice(['0', '1']))
-    two = '2'
-    three_or_four = ''.join(random.choice(['3', '4']))
-    last = '36'
-    random_zero_to_five = random.randint(0, 5)
-    result = f"{one}{zero_or_one * random_zero_to_five}{two}{three_or_four * 5}{last}"
-    print(f"Step 1: Process '1'. Fixed character. Current string: {one}")
-    if zero_or_one:
-        print(f"Step 2: Process (0|1)*. Generated '{zero_or_one}' {random_zero_to_five} times. Current string: {one}{zero_or_one * random_zero_to_five}")
-    else:
-        print(f"Step 2: Process (0|1)*. Skipped (empty). Current string: {one}")
-    print(f"Step 3: Process '2'. Fixed character. Current string: {one}{zero_or_one * random_zero_to_five}{two}")
-    print(
-        f"Step 4: Process (3|4)⁵. Generated '{three_or_four}' 5 times. Current string: {one}{zero_or_one * random_zero_to_five}{two}{three_or_four * 5}")
-    print(f"Step 5: Process '36'. Fixed ending. Current string: {result}")
-    return result
-```
-
-The function `regex3()` generates a random string that matches the regular expression `1(0|1)*2(3|4)⁵36`, while also
-printing step-by-step how the string is formed. It starts by appending the fixed character `'1'` and displaying the
-initial state. Then, it selects either `'0'` or `'1'` and determines how many times (between 0 and 5) it should be repeated,
-as dictated by the `(0|1)*` pattern. If this section is generated, the function prints the chosen sequence and its
-repetitions; otherwise, it prints that this part was skipped. Next, the fixed character `'2'` is added to the string,
-followed by the generation of exactly five repetitions of either `'3'` or `'4'`, as required by `(3|4)⁵`. The generated
-section is printed with its final state. Finally, the fixed sequence `"36"` is appended, completing the pattern. The
-function prints the final constructed string and returns it.
-
-### *Regex Processing*
-```
-def regex1():
-    a_b = random.choice(['a', 'b'])
-    c_d = random.choice(['c', 'd'])
-    e = random.randint(1,5)
-    g = random.choice([True, False])
-    if g:
-        return f"{a_b}{c_d}{'E' * e}{'G'}"
-    else:
-        return f"{a_b}{c_d}{'E' * e}"
-```
-
-The function `trace_regex_processing()` is responsible for executing a given regex-generating function and displaying its
-output in a structured way. It starts by printing the name of the regex being processed. Then, it calls the provided
-function `(regex_func)`, which generates a random string while printing step-by-step how it was formed. Finally, it prints
-the fully constructed string as the final output. This function serves as a wrapper to ensure that each regex function
-runs in a consistent and informative manner.
+This function, `parse_group_once`, takes a simplified regex-like expression and generates a randomized string based on its
+structure. It supports character groups enclosed in parentheses, which may contain options separated by `|`, and selects
+one randomly. It also handles modifiers like `*`, `+`, `?`, and `^n` to control how many times a character or group is repeated.
+The function processes the expression left to right, expanding each token or group accordingly and building the final
+result.
 
 ## *2.Main*
 ### *Main*
 ```
-from regex import regex1, regex2, regex3, trace_regex_processing
+full_input = "P(Q|R|S)T(UV|W|X)*Z+"
 
-print("Tracing regex processing:")
-trace_regex_processing(regex1, "Regex 1")
-trace_regex_processing(regex2, "Regex 2")
-trace_regex_processing(regex3, "Regex 3")
+# Split regex and constant suffix using comma
+if ',' in full_input:
+    regex_part, fixed_suffix = full_input.split(',', 1)
+else:
+    regex_part, fixed_suffix = full_input, ''
+
+generated = parse_group_once(regex_part)
+final_output = generated + fixed_suffix
+
+print(f"Generated string: {final_output}")
 ```
 
-This script serves as the main entry point for executing and tracing the regex generation process. It imports the
-functions `regex1`, `regex2`, `regex3`, and `trace_regex_processing` from the regex module. The script begins by printing `"
-Tracing regex processing:"`, indicating that it is about to process the regular expressions. Then, it calls
-`trace_regex_processing()` for each regex function, sequentially generating and printing step-by-step how each string is
-formed, followed by the final generated string. This ensures that all three regex patterns are executed and displayed in
-an organized manner.
+This part of the code defines the input expression and processes it. It first checks if the input contains a comma—if
+so, it splits the string into a regex-like pattern `(regex_part)` and a fixed suffix `(fixed_suffix)` to append at the end.
+Then, it uses `parse_group_once` to generate a randomized string from the pattern and adds the fixed suffix. Finally, it
+prints the complete generated result.
 
 ## *Output*
 ![img_1.png](img_1.png)
